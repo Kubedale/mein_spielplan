@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#8a2d3b"/>
+  <!-- Theatervorhang -->
+  <path d="M96 112h320v40c-40 30-60 90-56 170-60-10-90-70-104-140-14 70-44 130-104 140 4-80-16-140-56-170z" fill="#faf8f5" opacity=".95"/>
+  <!-- Kalenderblatt -->
+  <rect x="166" y="300" width="180" height="120" rx="16" fill="#faf8f5"/>
+  <rect x="166" y="300" width="180" height="34" rx="16" fill="#1d1b18"/>
+  <rect x="166" y="318" width="180" height="16" fill="#1d1b18"/>
+  <g fill="#8a2d3b"><circle cx="206" cy="368" r="11"/><circle cx="256" cy="368" r="11"/><circle cx="306" cy="368" r="11"/><circle cx="206" cy="398" r="11"/></g>
+</svg>

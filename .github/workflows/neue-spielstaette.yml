@@ -1,0 +1,52 @@
+name: Neue Spielstätte eintragen
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+jobs:
+  eintragen:
+    # Nur Formulare der Projekt-Besitzerin werden verarbeitet; andere Besucher können nichts eintragen.
+    if: >-
+      contains(github.event.issue.labels.*.name, 'neue-spielstaette') &&
+      github.event.issue.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Spielstätte testen und eintragen
+        id: test
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: python werkzeuge/neue_spielstaette.py
+      - name: Änderung speichern
+        if: steps.test.outputs.ok == 'true'
+        env:
+          ISSUE_NR: ${{ github.event.issue.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add orte.json
+          git commit -m "Neue Spielstätte aus Formular #$ISSUE_NR"
+          git push
+      - name: Spielplan neu erstellen
+        if: steps.test.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run spielplan.yml --repo "$GITHUB_REPOSITORY"
+      - name: Rückmeldung im Formular
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NR: ${{ github.event.issue.number }}
+          OK: ${{ steps.test.outputs.ok }}
+        run: |
+          gh issue comment "$ISSUE_NR" --repo "$GITHUB_REPOSITORY" --body-file ergebnis.md
+          if [ "$OK" = "true" ]; then gh issue close "$ISSUE_NR" --repo "$GITHUB_REPOSITORY"; fi

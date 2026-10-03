@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Ballhaus Wedding",
+    "url": "https://www.ballhauswedding.de/",
+    "programm_url": "https://www.ballhauswedding.de/veranstaltungen"
+  },
+  {
+    "name": "Pianosalon Christophori",
+    "url": "https://www.konzertfluegel.com/",
+    "programm_url": "https://www.konzertfluegel.com/N_konzerte.html"
+  },
+  {
+    "name": "Junges Tanzhaus Berlin",
+    "url": "https://junges-tanzhaus-berlin.de/",
+    "programm_url": [
+      "https://junges-tanzhaus-berlin.de/de/kalender/",
+      "https://junges-tanzhaus-berlin.de/"
+    ]
+  },
+  {
+    "name": "Kammermusiksalon Prinzenallee",
+    "url": "https://www.kammermusiksalon.de/",
+    "programm_url": "https://www.kammermusiksalon.de/konzerte"
+  },
+  {
+    "name": "Theater Stralsund",
+    "url": "https://www.theater-vorpommern.de/de",
+    "programm_url": "https://www.theater-vorpommern.de/de/spielplan",
+    "nur_spielort": "Stralsund"
+  },
+  {
+    "name": "Prime Time Theater",
+    "url": "https://www.primetimetheater.de/",
+    "programm_url": "https://primetimetheater.ticket.io/?view=calendar"
+  }
+]

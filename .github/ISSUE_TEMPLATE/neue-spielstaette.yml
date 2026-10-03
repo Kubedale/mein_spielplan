@@ -1,0 +1,32 @@
+name: Neue Spielstätte
+description: Eine Spielstätte zum Spielplan hinzufügen. Sie wird automatisch eingetragen und getestet.
+title: "Neue Spielstätte"
+labels: ["neue-spielstaette"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Name
+      description: So erscheint die Spielstätte in der Übersicht.
+      placeholder: z. B. Sophiensæle
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Website
+      description: Startseite der Spielstätte.
+      placeholder: https://www.beispiel.de/
+    validations:
+      required: true
+  - type: input
+    id: programm_url
+    attributes:
+      label: Spielplan-Seite (optional)
+      description: Adresse der Seite, auf der das Programm steht. Hilft, wenn die automatische Suche sie nicht findet.
+      placeholder: https://www.beispiel.de/spielplan
+  - type: input
+    id: nur_spielort
+    attributes:
+      label: Nur Spielort (optional)
+      description: Nur Termine, deren Spielort dieses Wort enthält, z. B. Stralsund.

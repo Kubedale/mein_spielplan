@@ -1,0 +1,46 @@
+name: Spielplan aktualisieren
+
+on:
+  schedule:
+    - cron: "17 4 * * *"   # täglich 04:17 UTC (06:17 Uhr Sommerzeit, 05:17 Uhr Winterzeit)
+  workflow_dispatch:         # von Hand starten (Actions → "Spielplan aktualisieren" → Run workflow)
+  push:
+    branches: [main]
+    paths: ["spielplan.py", "orte.json", "app/**", "requirements.txt"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  bauen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Spielpläne abholen
+        run: |
+          mkdir -p seite
+          python spielplan.py --app --nicht-oeffnen --ausgabe seite/index.html
+          cp app/manifest.webmanifest app/sw.js app/icon-192.png app/icon-512.png seite/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: seite
+
+  veroeffentlichen:
+    needs: bauen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
