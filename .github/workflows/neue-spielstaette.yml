@@ -2,7 +2,7 @@ name: Neue Spielstätte eintragen
 
 on:
   issues:
-    types: [opened]
+    types: [opened, labeled]
 
 permissions:
   contents: write
@@ -12,9 +12,12 @@ permissions:
 jobs:
   eintragen:
     # Nur Formulare der Projekt-Besitzerin werden verarbeitet; andere Besucher können nichts eintragen.
+    # Das Formular wird an seinem Inhalt erkannt (nicht nur am Etikett, das GitHub nur vergibt,
+    # wenn es im Projekt existiert). Nachträglich auslösen: Etikett "neue-spielstaette" vergeben.
     if: >-
-      contains(github.event.issue.labels.*.name, 'neue-spielstaette') &&
-      github.event.issue.user.login == github.repository_owner
+      github.event.issue.user.login == github.repository_owner &&
+      contains(github.event.issue.body, '### Website') &&
+      (github.event.action == 'opened' || github.event.label.name == 'neue-spielstaette')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
