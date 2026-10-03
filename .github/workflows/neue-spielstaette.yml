@@ -46,10 +46,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run spielplan.yml --repo "$GITHUB_REPOSITORY"
       - name: Rückmeldung im Formular
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NR: ${{ github.event.issue.number }}
           OK: ${{ steps.test.outputs.ok }}
         run: |
-          gh issue comment "$ISSUE_NR" --repo "$GITHUB_REPOSITORY" --body-file ergebnis.md
-          if [ "$OK" = "true" ]; then gh issue close "$ISSUE_NR" --repo "$GITHUB_REPOSITORY"; fi
+          [ -f ergebnis.md ] || echo "❌ Der Test ist abgebrochen, bevor er ein Ergebnis schreiben konnte." > ergebnis.md
+          cat ergebnis.md >> "$GITHUB_STEP_SUMMARY"
+          python -c "import json; print(json.dumps({'body': open('ergebnis.md', encoding='utf-8').read()}))" > kommentar.json
+          gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NR/comments" --input kommentar.json --jq .html_url
+          if [ "$OK" = "true" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NR" -f state=closed --jq .state
+          fi
