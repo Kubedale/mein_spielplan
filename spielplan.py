@@ -481,32 +481,67 @@ def _sicher(d, tag):
 
 # ------------------- 3d. Wix-Seiten: Termin-Seiten aus der Sitemap lesen
 
-def lies_wix_sitemap(basis, ort):
-    """Wix-Veranstaltungen werden per JavaScript nachgeladen. Ihre Einzelseiten
-    (…/event-details/…) stehen aber in der Sitemap und enthalten oft Termin-Daten."""
+def lies_termin_bloecke(soup, ort, basis):
+    """Veranstaltungsseite mit Termin-Blöcken (z. B. Heimathafen Neukölln):
+    <div class="single-event__performances__item"> … <span>22.2.2027</span> … __time">20:00 …"""
+    ueberschrift = soup.find("h1")
+    titel = sauber(ueberschrift.get_text(" ")) if ueberschrift else ""
+    termine = []
+    # nur den äußeren Block je Termin (Klasse endet auf "performances__item"), nicht dessen Teile
+    bloecke = soup.find_all(lambda t: any(k.endswith("performances__item") for k in t.get("class", [])))
+    for block in bloecke:
+        datum_el = block.select_one("[class*='__date']") or block
+        m = re.search(r"(\d{1,2})\.(\d{1,2})\.(\d{4})", datum_el.get_text(" "))
+        if not (m and titel):
+            continue
+        try:
+            datum = date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            continue
+        zeit_el = block.select_one("[class*='__time']")
+        z = re.search(r"(\d{1,2}):(\d{2})", zeit_el.get_text(" ") if zeit_el else "")
+        status_el = block.select_one("[class*='__status']")
+        status = sauber(status_el.get_text(" ")) if status_el else ""
+        name = f"[{status}] {titel}" if status else titel
+        termine.append(Termin(ort, name, datum, f"{int(z.group(1)):02d}:{z.group(2)}" if z else "", basis))
+    return termine
+
+
+def lies_sitemap_veranstaltungen(basis, ort):
+    """Veranstaltungen, die erst per JavaScript nachgeladen werden (z. B. Wix, Heimathafen):
+    Ihre Einzelseiten (…/event-details/…, …/events/…) stehen in der Sitemap und enthalten
+    Termin-Daten. Gelesen werden die Seiten, die im letzten Jahr geändert wurden."""
     origin = "{0.scheme}://{0.netloc}".format(urlparse(basis))
     xml = hole(origin + "/sitemap.xml").text
     if "event" not in xml.lower():
         return []
 
     def eintraege(text):
-        return [(u.group(1), (re.search(r"<lastmod>([^<]+)", u.group(0)) or [None, ""])[1])
+        return [(u.group(1).strip(), (re.search(r"<lastmod>([^<]+)", u.group(0)) or [None, ""])[1])
                 for u in re.finditer(r"<(?:url|sitemap)>\s*<loc>([^<]+)</loc>.*?</(?:url|sitemap)>", text, re.S)]
 
     seiten = []
     for loc, geaendert in eintraege(xml):
+        name = loc.lower().rsplit("/", 1)[-1]
         if "event" not in loc.lower():
             continue
         if loc.endswith(".xml"):
+            if re.search(r"(tag|cat|categor)", name):  # Schlagwort-/Kategorie-Seiten sind keine Termine
+                continue
             seiten += eintraege(hole(loc).text)
         else:
             seiten.append((loc, geaendert))
-    seiten = [s for s in seiten if "event-details" in s[0] or "/events/" in s[0]]
-    seiten.sort(key=lambda s: s[1], reverse=True)  # neueste zuerst
-    log(f"Sitemap: {len(seiten)} Veranstaltungsseiten, lese die neuesten 40")
+    seiten = [s for s in seiten if ("event-details" in s[0] or "/events/" in s[0])
+              and not re.search(r"/events/?$|/page/\d+", s[0])]
+    seiten.sort(key=lambda s: s[1], reverse=True)  # zuletzt geänderte zuerst
+    grenze = (date.today() - timedelta(days=365)).isoformat()
+    aktuell = [s for s in seiten if s[1] and s[1][:10] >= grenze][:250]
+    if not aktuell:  # keine Änderungsdaten in der Sitemap: die ersten 40 nehmen
+        aktuell = seiten[:40]
+    log(f"Sitemap: {len(seiten)} Veranstaltungsseiten, lese {len(aktuell)} davon")
     termine = []
-    for loc, _ in seiten[:40]:
-        time.sleep(1.5)  # höflich bleiben, Wix bremst sonst mit "zu viele Anfragen"
+    for loc, _ in aktuell:
+        time.sleep(0.5)  # höflich bleiben; manche Seiten bremsen sonst mit "zu viele Anfragen"
         try:
             soup = BeautifulSoup(hole(loc).text, "html.parser")
         except requests.RequestException:
@@ -515,7 +550,7 @@ def lies_wix_sitemap(basis, ort):
                 soup = BeautifulSoup(hole(loc).text, "html.parser")
             except requests.RequestException:
                 continue
-        termine += lies_jsonld(soup, ort, loc)
+        termine += lies_jsonld(soup, ort, loc) or lies_termin_bloecke(soup, ort, loc)
     return termine
 
 
@@ -669,7 +704,7 @@ def sammle_ort(ort, bis=None):
         ("strukturierte Daten (JSON-LD)", ueber_seiten(lies_jsonld)),
         ("eingebettete Termin-Daten", ueber_seiten(lies_eingebettete_daten)),
         ("Programm-Text", ueber_seiten(lies_textzeilen)),
-        ("Wix-Veranstaltungsseiten", lambda: lies_wix_sitemap(basis, name)),
+        ("Veranstaltungsseiten aus der Sitemap", lambda: lies_sitemap_veranstaltungen(basis, name)),
         ("HTML-Heuristik", ueber_seiten(lies_html_heuristik)),
     ]
 
