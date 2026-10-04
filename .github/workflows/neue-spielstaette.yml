@@ -29,7 +29,20 @@ jobs:
         id: test
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NR: ${{ github.event.issue.number }}
         run: python werkzeuge/neue_spielstaette.py
+      - name: Seiten für die Fehlersuche ablegen
+        if: steps.test.outputs.ok != 'true' && hashFiles('diagnose/*.html') != ''
+        env:
+          ISSUE_NR: ${{ github.event.issue.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "diagnose/formular-$ISSUE_NR"
+          git add -f diagnose
+          git commit -q -m "Diagnose zu Formular #$ISSUE_NR"
+          git push -f origin "diagnose/formular-$ISSUE_NR"
+          git checkout -q main
       - name: Änderung speichern
         if: steps.test.outputs.ok == 'true'
         env:

@@ -57,6 +57,7 @@ def main():
             text = "❌ Nicht eingetragen:\n\n" + "\n".join(f"- {f}" for f in fehler)
         else:
             heute = date.today()
+            spielplan.DEBUG = True  # heruntergeladene Seiten in diagnose/ ablegen (für die Fehlersuche)
             termine, methode = spielplan.sammle_ort(ort, heute + timedelta(days=120))
             termine = [t for t in termine if heute <= t.datum <= heute + timedelta(days=120)]
             if ort.get("nur_spielort"):
@@ -78,6 +79,11 @@ def main():
                         "noch nicht eingetragen.\n\nMögliche Gründe: Die Seite lädt ihr Programm erst nachträglich, "
                         "oder ihr Aufbau ist dem Programm noch unbekannt. Hilfreich: die genaue Spielplan-Seite "
                         "angeben (neues Formular) oder das Programm für diese Seite erweitern lassen.")
+                nr = os.environ.get("ISSUE_NR", "")
+                if nr and any((HIER / "diagnose").glob("*.html")):
+                    text += (f"\n\n🔍 Die heruntergeladenen Seiten liegen für die Fehlersuche im Branch "
+                             f"`diagnose/formular-{nr}`. Nach einer Anpassung des Programms dieses Formular "
+                             "erneut auslösen: Etikett `neue-spielstaette` entfernen und wieder vergeben.")
     except Exception as e:  # Rückmeldung statt stillem Abbruch
         text = f"❌ Unerwarteter Fehler: `{type(e).__name__}: {e}`"
     ausgabe.write_text(text + "\n", encoding="utf-8")
