@@ -32,5 +32,10 @@
     "name": "Prime Time Theater",
     "url": "https://www.primetimetheater.de/",
     "programm_url": "https://primetimetheater.ticket.io/?view=calendar"
+  },
+  {
+    "name": "Heimathafen Neukölln",
+    "url": "https://heimathafen-neukoelln.de/",
+    "programm_url": "https://heimathafen-neukoelln.de/"
   }
 ]
